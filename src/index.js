@@ -1,9 +1,9 @@
 class RemoveConsoleWebpackPlugin {
-  // 构造函数接受配置参数
+  // 调用插件的时候传入的配置参数
   constructor(options) {
-    console.log(options)
+    // 根据传入的参数来判断清除哪些内容
     let include = options && options.include;
-    let removed = ['log']; // 默认清除的方法
+    let removed = ['log']; // 默认清除log
 
     if (include) {
       if (!Array.isArray(include)) {
@@ -12,9 +12,9 @@ class RemoveConsoleWebpackPlugin {
         // 传入 * 表示清除所有 console 的方法
         removed = Object.keys(console).filter(fn => {
           return typeof console[fn] === 'function';
-        })
+        });
       } else {
-        removed = include; // 根据传入配置覆盖
+        removed = include;
       }
     }
 
@@ -26,7 +26,6 @@ class RemoveConsoleWebpackPlugin {
     console.log(compiler);
     // js 资源代码处理函数
     let assetsHandler = (assets, compilation) => {
-      console.log(assets, compilation);
       let removedStr = this.removed.reduce((a, b) => (a + '|' + b));
 
       let reDict = {
@@ -34,7 +33,7 @@ class RemoveConsoleWebpackPlugin {
         2: [new RegExp(`\\.console\\.(${removedStr})\\(`, 'g'), ';('],
         3: [new RegExp(`console\\.(${removedStr})\\(\\)`, 'g'), ''],
         4: [new RegExp(`console\\.(${removedStr})\\(`, 'g'), '(']
-      }
+      };
 
       Object.entries(assets).forEach(([filename, source]) => {
         console.log(filename, source);
@@ -46,21 +45,21 @@ class RemoveConsoleWebpackPlugin {
           Object.keys(reDict).forEach(i => {
             let [re, s] = reDict[i];
             outputContent = outputContent.replace(re, s);
-          })
+          });
 
           compilation.assets[filename] = {
             // 返回文件内容
             source: () => {
-              return outputContent
+              return outputContent;
             },
             // 返回文件大小
             size: () => {
-              return Buffer.byteLength(outputContent, 'utf8')
+              return Buffer.byteLength(outputContent, 'utf8');
             }
-          }
+          };
         }
-      })
-    }
+      });
+    };
 
     /**
      * 通过 compiler.hooks.compilation.tap 监听事件
@@ -68,7 +67,6 @@ class RemoveConsoleWebpackPlugin {
      */
     compiler.hooks.compilation.tap('RemoveConsoleWebpackPlugin',
       compilation => {
-        console.log(666);
         // webpack 5
         if (compilation.hooks.processAssets) {
           compilation.hooks.processAssets.tap({ name: 'RemoveConsoleWebpackPlugin' },
@@ -77,9 +75,9 @@ class RemoveConsoleWebpackPlugin {
         } else if (compilation.hooks.optimizeAssets) {
           // webpack 4
           compilation.hooks.optimizeAssets.tap('RemoveConsoleWebpackPlugin',
-              assets => assetsHandler(assets, compilation));
+            assets => assetsHandler(assets, compilation));
         }
-      })
+      });
   }
 }
 
